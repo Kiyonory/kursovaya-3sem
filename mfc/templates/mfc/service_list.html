@@ -1,0 +1,96 @@
+{% extends 'mfc/base.html' %}
+
+{% block title %}Список услуг - МФЦ{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>Список услуг</h2>
+        <a href="{% url 'mfc:service_create' %}" class="btn btn-success">➕ Добавить услугу</a>
+    </div>
+
+    <!-- Форма поиска и фильтрации -->
+    <form method="get" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+        <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px; align-items: end;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="search">Поиск по названию:</label>
+                <input type="text" name="search" id="search" class="form-control" 
+                       value="{{ search_query }}" placeholder="Введите название услуги...">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="category">Категория:</label>
+                <select name="category" id="category" class="form-control">
+                    <option value="">Все категории</option>
+                    {% for category in categories %}
+                        <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary">🔍 Найти</button>
+                <a href="{% url 'mfc:service_list' %}" class="btn btn-secondary">Сбросить</a>
+            </div>
+        </div>
+    </form>
+
+    {% if services %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Название</th>
+                    <th>Категория</th>
+                    <th>Срок выполнения</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for service in services %}
+                    <tr>
+                        <td>{{ service.id }}</td>
+                        <td>
+                            <a href="{% url 'mfc:service_detail' service.pk %}" style="color: #667eea; text-decoration: none;">
+                                {{ service.name }}
+                            </a>
+                        </td>
+                        <td>{{ service.category.name }}</td>
+                        <td>{{ service.duration_days }} дн.</td>
+                        <td>
+                            <a href="{% url 'mfc:service_detail' service.pk %}" class="btn btn-primary" style="padding: 5px 10px; font-size: 12px;">👁️ Просмотр</a>
+                            <a href="{% url 'mfc:service_update' service.pk %}" class="btn btn-success" style="padding: 5px 10px; font-size: 12px;">✏️ Редактировать</a>
+                            <a href="{% url 'mfc:service_delete' service.pk %}" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;">🗑️ Удалить</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Пагинация -->
+        {% if is_paginated %}
+            <div style="margin-top: 20px; text-align: center;">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="btn btn-secondary">« Первая</a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="btn btn-secondary">‹ Предыдущая</a>
+                {% endif %}
+                
+                <span style="padding: 0 15px;">
+                    Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+                </span>
+                
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="btn btn-secondary">Следующая ›</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="btn btn-secondary">Последняя »</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="empty-state">
+            <p>Услуги не найдены.</p>
+            <a href="{% url 'mfc:service_create' %}" class="btn btn-success" style="margin-top: 15px;">Добавить первую услугу</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+

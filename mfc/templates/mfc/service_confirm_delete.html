@@ -1,0 +1,25 @@
+{% extends 'mfc/base.html' %}
+
+{% block title %}Удаление услуги - МФЦ{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>🗑️ Удаление услуги</h2>
+    
+    <div style="margin: 30px 0; padding: 20px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+        <p style="font-weight: 600; margin-bottom: 10px;">Вы уверены, что хотите удалить эту услугу?</p>
+        <p><strong>Название:</strong> {{ service.name }}</p>
+        <p><strong>Категория:</strong> {{ service.category.name }}</p>
+        <p style="color: #dc3545; margin-top: 15px;">Это действие нельзя отменить!</p>
+    </div>
+
+    <form method="post" style="margin-top: 20px;">
+        {% csrf_token %}
+        <div class="actions">
+            <button type="submit" class="btn btn-danger">Да, удалить</button>
+            <a href="{% url 'mfc:service_detail' service.pk %}" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

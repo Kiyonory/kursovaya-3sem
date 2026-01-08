@@ -1,0 +1,69 @@
+{% extends 'mfc/base.html' %}
+
+{% block title %}
+    {% if object %}Редактирование услуги{% else %}Добавление услуги{% endif %} - МФЦ
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>
+        {% if object %}
+            ✏️ Редактирование услуги
+        {% else %}
+            ➕ Добавление новой услуги
+        {% endif %}
+    </h2>
+
+    <form method="post" style="margin-top: 30px;">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+                <div style="color: #dc3545; margin-top: 5px; font-size: 14px;">
+                    {{ form.name.errors }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
+            {{ form.category }}
+            {% if form.category.errors %}
+                <div style="color: #dc3545; margin-top: 5px; font-size: 14px;">
+                    {{ form.category.errors }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.duration_days.id_for_label }}">{{ form.duration_days.label }}</label>
+            {{ form.duration_days }}
+            {% if form.duration_days.errors %}
+                <div style="color: #dc3545; margin-top: 5px; font-size: 14px;">
+                    {{ form.duration_days.errors }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+                <div style="color: #dc3545; margin-top: 5px; font-size: 14px;">
+                    {{ form.description.errors }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="btn btn-primary">
+                {% if object %}Сохранить изменения{% else %}Добавить услугу{% endif %}
+            </button>
+            <a href="{% url 'mfc:service_list' %}" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

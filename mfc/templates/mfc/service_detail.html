@@ -1,0 +1,42 @@
+{% extends 'mfc/base.html' %}
+
+{% block title %}{{ service.name }} - МФЦ{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>{{ service.name }}</h2>
+        <div class="actions">
+            <a href="{% url 'mfc:service_list' %}" class="btn btn-secondary">← Назад к списку</a>
+            <a href="{% url 'mfc:service_update' service.pk %}" class="btn btn-success">✏️ Редактировать</a>
+            <a href="{% url 'mfc:service_delete' service.pk %}" class="btn btn-danger">🗑️ Удалить</a>
+        </div>
+    </div>
+
+    <div style="margin-top: 30px;">
+        <table style="max-width: 600px;">
+            <tr>
+                <th style="width: 200px;">ID:</th>
+                <td>{{ service.id }}</td>
+            </tr>
+            <tr>
+                <th>Название:</th>
+                <td>{{ service.name }}</td>
+            </tr>
+            <tr>
+                <th>Категория:</th>
+                <td>{{ service.category.name }}</td>
+            </tr>
+            <tr>
+                <th>Срок выполнения:</th>
+                <td>{{ service.duration_days }} дн.</td>
+            </tr>
+            <tr>
+                <th>Описание:</th>
+                <td>{{ service.description|default:"Не указано" }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
