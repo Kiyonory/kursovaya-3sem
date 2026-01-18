@@ -9,70 +9,129 @@
         <a href="{% url 'mfc:service_create' %}" class="btn btn-success">➕ Добавить услугу</a>
     </div>
 
-    <!-- Форма поиска и фильтрации -->
-    <form method="get" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
-        <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px; align-items: end;">
-            <div class="form-group" style="margin-bottom: 0;">
-                <label for="search">Поиск по названию:</label>
-                <input type="text" name="search" id="search" class="form-control" 
-                       value="{{ search_query }}" placeholder="Введите название услуги...">
+    <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+        <h3 style="margin-top: 0; margin-bottom: 15px; color: #667eea;">🔍 Фильтры и поиск</h3>
+        <form method="get">
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 180px; gap: 15px; align-items: end;">
+                <div class="form-group" style="margin-bottom: 0; min-width: 0;">
+                    <label for="search"><strong>Поиск по названию:</strong></label>
+                    <input type="text" name="search" id="search" class="form-control" 
+                           value="{{ search_query }}" placeholder="Введите название услуги...">
+                </div>
+                <div class="form-group" style="margin-bottom: 0; min-width: 0;">
+                    <label for="category"><strong>Категория:</strong></label>
+                    <select name="category" id="category" class="form-control">
+                        <option value="">Все категории</option>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0; min-width: 0;">
+                    <label for="duration_max"><strong>Макс. срок (дней):</strong></label>
+                    <input type="number" name="duration_max" id="duration_max" class="form-control" 
+                           value="{{ duration_max }}" placeholder="Например: 7" min="1">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px; min-width: 180px;">
+                    <button type="submit" class="btn btn-primary" style="white-space: nowrap; width: 100%;">🔍 Применить</button>
+                    <a href="{% url 'mfc:service_list' %}" class="btn btn-secondary" style="white-space: nowrap; width: 100%;">🔄 Сбросить</a>
+                </div>
             </div>
-            <div class="form-group" style="margin-bottom: 0;">
-                <label for="category">Категория:</label>
-                <select name="category" id="category" class="form-control">
-                    <option value="">Все категории</option>
-                    {% for category in categories %}
-                        <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>
-                            {{ category.name }}
-                        </option>
-                    {% endfor %}
-                </select>
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                <h4 style="margin-bottom: 10px; color: #667eea; font-size: 14px;">📊 Простые фильтры:</h4>
+                <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+                    <div class="form-check" style="flex: 0 0 auto;">
+                        <input type="checkbox" name="short_duration" id="short_duration" class="form-check-input" 
+                               {% if short_duration %}checked{% endif %}>
+                        <label class="form-check-label" for="short_duration" style="cursor: pointer;">
+                            <strong>Короткий срок (до 7 дней)</strong>
+                        </label>
+                    </div>
+                    <div class="form-check" style="flex: 0 0 auto;">
+                        <input type="checkbox" name="popular" id="popular" class="form-check-input" 
+                               {% if popular %}checked{% endif %}>
+                        <label class="form-check-label" for="popular" style="cursor: pointer;">
+                            <strong>Популярные (есть заявки)</strong>
+                            <br>
+                            <small style="color: #666; font-style: italic; font-weight: normal;">
+                                Услуги, на которые подали хотя бы одну заявку
+                            </small>
+                        </label>
+                    </div>
+                </div>
             </div>
-            <div>
-                <button type="submit" class="btn btn-primary">🔍 Найти</button>
-                <a href="{% url 'mfc:service_list' %}" class="btn btn-secondary">Сбросить</a>
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #667eea;">
+                <h4 style="margin-bottom: 10px; color: #667eea; font-size: 14px;">🎯 Сложный фильтр (AND, OR):</h4>
+                <div class="form-check" style="background: #fff3cd; padding: 10px; border-radius: 4px;">
+                    <input type="checkbox" name="complex_filter2" id="complex_filter2" class="form-check-input" 
+                           {% if complex_filter2 %}checked{% endif %}>
+                    <label class="form-check-label" for="complex_filter2" style="cursor: pointer;">
+                        <strong>Услуги больше 7 дней И без описания</strong>
+                        <br>
+                        <small style="color: #666; font-style: italic;">
+                            Найдет услуги с длинным сроком (>7 дней), у которых нет описания
+                        </small>
+                    </label>
+                </div>
             </div>
-        </div>
-    </form>
+        </form>
+    </div>
 
     {% if services %}
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Название</th>
-                    <th>Категория</th>
-                    <th>Срок выполнения</th>
-                    <th>Действия</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for service in services %}
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; table-layout: fixed;">
+                <thead>
                     <tr>
-                        <td>{{ service.id }}</td>
-                        <td>
-                            <a href="{% url 'mfc:service_detail' service.pk %}" style="color: #667eea; text-decoration: none;">
-                                {{ service.name }}
-                            </a>
-                        </td>
-                        <td>{{ service.category.name }}</td>
-                        <td>{{ service.duration_days }} дн.</td>
-                        <td>
-                            <a href="{% url 'mfc:service_detail' service.pk %}" class="btn btn-primary" style="padding: 5px 10px; font-size: 12px;">👁️ Просмотр</a>
-                            <a href="{% url 'mfc:service_update' service.pk %}" class="btn btn-success" style="padding: 5px 10px; font-size: 12px;">✏️ Редактировать</a>
-                            <a href="{% url 'mfc:service_delete' service.pk %}" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;">🗑️ Удалить</a>
-                        </td>
+                        <th style="width: 60px;">ID</th>
+                        <th style="width: auto;">Название</th>
+                        <th style="width: 200px;">Категория</th>
+                        <th style="width: 150px;">Срок выполнения</th>
+                        <th style="width: 120px;">Заявок</th>
+                        <th style="width: 320px;">Действия</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for service in services %}
+                        <tr>
+                            <td>{{ service.id }}</td>
+                            <td style="overflow: hidden; text-overflow: ellipsis;">
+                                <a href="{% url 'mfc:service_detail' service.pk %}" style="color: #667eea; text-decoration: none;">
+                                    {{ service.name }}
+                                </a>
+                            </td>
+                            <td style="overflow: hidden; text-overflow: ellipsis;">{{ service.category.name }}</td>
+                            <td>{{ service.duration_days }} дн.</td>
+                            <td style="text-align: center;">
+                                {% with request_count=service.requests.count %}
+                                    {% if request_count > 0 %}
+                                        <span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+                                            {{ request_count }}
+                                        </span>
+                                    {% else %}
+                                        <span style="color: #999; font-size: 12px;">0</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td style="white-space: nowrap;">
+                                <div style="display: flex; gap: 5px; flex-wrap: nowrap;">
+                                    <a href="{% url 'mfc:service_detail' service.pk %}" class="btn btn-primary" style="padding: 5px 10px; font-size: 12px; flex-shrink: 0;">👁️</a>
+                                    <a href="{% url 'mfc:service_update' service.pk %}" class="btn btn-success" style="padding: 5px 10px; font-size: 12px; flex-shrink: 0;">✏️</a>
+                                    <a href="{% url 'mfc:service_delete' service.pk %}" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px; flex-shrink: 0;">🗑️</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-        <!-- Пагинация -->
         {% if is_paginated %}
             <div style="margin-top: 20px; text-align: center;">
                 {% if page_obj.has_previous %}
-                    <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="btn btn-secondary">« Первая</a>
-                    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="btn btn-secondary">‹ Предыдущая</a>
+                    <a href="?{% if query_string %}{{ query_string }}&{% endif %}page=1" class="btn btn-secondary">« Первая</a>
+                    <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn btn-secondary">‹ Предыдущая</a>
                 {% endif %}
                 
                 <span style="padding: 0 15px;">
@@ -80,8 +139,8 @@
                 </span>
                 
                 {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="btn btn-secondary">Следующая ›</a>
-                    <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="btn btn-secondary">Последняя »</a>
+                    <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn btn-secondary">Следующая ›</a>
+                    <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.paginator.num_pages }}" class="btn btn-secondary">Последняя »</a>
                 {% endif %}
             </div>
         {% endif %}

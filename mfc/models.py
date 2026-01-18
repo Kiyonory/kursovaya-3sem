@@ -1,27 +1,14 @@
 from django.db import models
 from django.core.validators import MinValueValidator
-from django.utils import timezone
-
-
-class Role(models.Model):
-    """Справочник ролей пользователей"""
-    name = models.CharField(
-        max_length=100,
-        verbose_name='Название роли',
-        unique=True
-    )
-
-    class Meta:
-        verbose_name = 'Роль'
-        verbose_name_plural = 'Роли'
-        ordering = ['name']
-
-    def __str__(self):
-        return self.name
+from simple_history.models import HistoricalRecords
 
 
 class User(models.Model):
-    """Пользователь системы"""
+    ROLE_CHOICES = [
+        ('user', 'Пользователь'),
+        ('admin', 'Администратор'),
+    ]
+
     full_name = models.CharField(
         max_length=200,
         verbose_name='ФИО'
@@ -36,6 +23,12 @@ class User(models.Model):
         blank=True,
         null=True
     )
+    role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default='user',
+        verbose_name='Роль'
+    )
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата создания'
@@ -43,12 +36,6 @@ class User(models.Model):
     updated_at = models.DateTimeField(
         auto_now=True,
         verbose_name='Дата обновления'
-    )
-    roles = models.ManyToManyField(
-        Role,
-        through='UserRole',
-        related_name='users',
-        verbose_name='Роли'
     )
 
     class Meta:
@@ -59,38 +46,12 @@ class User(models.Model):
     def __str__(self):
         return self.full_name
 
-
-class UserRole(models.Model):
-    """Связь многие-ко-многим между пользователями и ролями"""
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Пользователь',
-        related_name='user_roles'
-    )
-    role = models.ForeignKey(
-        Role,
-        on_delete=models.CASCADE,
-        verbose_name='Роль',
-        related_name='user_roles'
-    )
-    assigned_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата назначения'
-    )
-
-    class Meta:
-        verbose_name = 'Роль пользователя'
-        verbose_name_plural = 'Роли пользователей'
-        unique_together = ['user', 'role']
-        ordering = ['-assigned_at']
-
-    def __str__(self):
-        return f'{self.user.full_name} - {self.role.name}'
+    @property
+    def is_admin(self):
+        return self.role == 'admin'
 
 
 class ServiceCategory(models.Model):
-    """Справочник категорий услуг"""
     name = models.CharField(
         max_length=200,
         verbose_name='Название категории',
@@ -112,7 +73,6 @@ class ServiceCategory(models.Model):
 
 
 class Service(models.Model):
-    """Услуга МФЦ"""
     name = models.CharField(
         max_length=200,
         verbose_name='Название услуги'
@@ -131,8 +91,16 @@ class Service(models.Model):
     duration_days = models.PositiveIntegerField(
         verbose_name='Срок выполнения (дней)',
         validators=[MinValueValidator(1)],
-        default=1
+        default=1  # type: ignore
     )
+    offices = models.ManyToManyField(
+        'MFCOffice',
+        related_name='services',
+        verbose_name='Отделения МФЦ',
+        blank=True,
+        help_text='Отделения, где предоставляется данная услуга'
+    )
+    history = HistoricalRecords()
 
     class Meta:
         verbose_name = 'Услуга'
@@ -144,7 +112,6 @@ class Service(models.Model):
 
 
 class MFCOffice(models.Model):
-    """Отделение МФЦ"""
     address = models.CharField(
         max_length=500,
         verbose_name='Адрес'
@@ -171,58 +138,7 @@ class MFCOffice(models.Model):
         return f'{self.district or ""} - {self.address}'.strip(' -')
 
 
-class Appointment(models.Model):
-    """Запись на приём"""
-    STATUS_CHOICES = [
-        ('pending', 'Ожидает'),
-        ('confirmed', 'Подтверждена'),
-        ('completed', 'Завершена'),
-        ('cancelled', 'Отменена'),
-    ]
-
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Пользователь',
-        related_name='appointments'
-    )
-    service = models.ForeignKey(
-        Service,
-        on_delete=models.CASCADE,
-        verbose_name='Услуга',
-        related_name='appointments'
-    )
-    office = models.ForeignKey(
-        MFCOffice,
-        on_delete=models.CASCADE,
-        verbose_name='Отделение',
-        related_name='appointments'
-    )
-    appointment_datetime = models.DateTimeField(
-        verbose_name='Дата и время приёма'
-    )
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='pending',
-        verbose_name='Статус'
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата создания'
-    )
-
-    class Meta:
-        verbose_name = 'Запись на приём'
-        verbose_name_plural = 'Записи на приём'
-        ordering = ['-appointment_datetime']
-
-    def __str__(self):
-        return f'{self.user.full_name} - {self.service.name} ({self.appointment_datetime})'
-
-
 class Request(models.Model):
-    """Заявка на услугу"""
     STATUS_CHOICES = [
         ('new', 'Новая'),
         ('in_progress', 'В обработке'),
@@ -242,6 +158,14 @@ class Request(models.Model):
         verbose_name='Услуга',
         related_name='requests'
     )
+    office = models.ForeignKey(
+        MFCOffice,
+        on_delete=models.CASCADE,
+        verbose_name='Отделение МФЦ',
+        related_name='requests',
+        null=True,
+        blank=True
+    )
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -256,6 +180,7 @@ class Request(models.Model):
         auto_now=True,
         verbose_name='Дата обновления'
     )
+    history = HistoricalRecords()
 
     class Meta:
         verbose_name = 'Заявка'
@@ -263,11 +188,10 @@ class Request(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'Заявка #{self.id} - {self.user.full_name} ({self.service.name})'
+        return f'Заявка #{self.id} - {self.user.full_name} ({self.service.name})'  # type: ignore
 
 
 class Document(models.Model):
-    """Документ (работа с изображениями)"""
     FILE_TYPE_CHOICES = [
         ('image', 'Изображение'),
         ('pdf', 'PDF'),
@@ -280,14 +204,15 @@ class Document(models.Model):
         verbose_name='Заявка',
         related_name='documents'
     )
-    file = models.FileField(
+    file = models.ImageField(
         upload_to='documents/%Y/%m/%d/',
-        verbose_name='Файл'
+        verbose_name='Файл (изображение)',
+        help_text='Загрузите изображение (JPG, PNG, GIF)'
     )
     file_type = models.CharField(
         max_length=20,
         choices=FILE_TYPE_CHOICES,
-        default='other',
+        default='image',
         verbose_name='Тип файла'
     )
     uploaded_at = models.DateTimeField(
@@ -309,4 +234,4 @@ class Document(models.Model):
         ordering = ['-uploaded_at']
 
     def __str__(self):
-        return f'Документ для заявки #{self.request.id} - {self.file.name}'
+        return f'Документ для заявки #{self.request.id} - {self.file.name}'  # type: ignore

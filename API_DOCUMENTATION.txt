@@ -1,0 +1,594 @@
+Документация API и примеры запросов
+
+Базовый URL: http://127.0.0.1:8000/api/
+
+Все запросы возвращают данные в формате JSON. Для аутентификации используется SessionAuthentication (требуется вход через веб-интерфейс).
+
+1. API для услуг (Service)
+
+1.1. Получить список всех услуг
+
+Метод: GET
+URL: /api/services/
+Описание: Возвращает список всех услуг с пагинацией (10 записей на страницу)
+
+Пример запроса:
+curl -X GET http://127.0.0.1:8000/api/services/
+
+Пример ответа:
+{
+    "count": 25,
+    "next": "http://127.0.0.1:8000/api/services/?page=2",
+    "previous": null,
+    "results": [
+        {
+            "id": 1,
+            "name": "Выдача паспорта РФ",
+            "description": "Оформление паспорта гражданина Российской Федерации",
+            "category": {
+                "id": 1,
+                "name": "Документы и удостоверения",
+                "description": "Категория документов"
+            },
+            "category_id": 1,
+            "category_name": "Документы и удостоверения",
+            "duration_days": 30
+        }
+    ]
+}
+
+1.2. Получить конкретную услугу
+
+Метод: GET
+URL: /api/services/{id}/
+Описание: Возвращает информацию об одной услуге по её ID
+
+Пример запроса:
+curl -X GET http://127.0.0.1:8000/api/services/1/
+
+Пример ответа:
+{
+    "id": 1,
+    "name": "Выдача паспорта РФ",
+    "description": "Оформление паспорта гражданина Российской Федерации",
+    "category": {
+        "id": 1,
+        "name": "Документы и удостоверения",
+        "description": "Категория документов"
+    },
+    "category_id": 1,
+    "category_name": "Документы и удостоверения",
+    "duration_days": 30
+}
+
+1.3. Создать новую услугу
+
+Метод: POST
+URL: /api/services/
+Описание: Создаёт новую услугу. Требуется указать name и category_id
+
+Пример запроса:
+curl -X POST http://127.0.0.1:8000/api/services/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Замена водительского удостоверения",
+    "description": "Замена водительского удостоверения при истечении срока",
+    "category_id": 1,
+    "duration_days": 14
+  }'
+
+Пример ответа (201 Created):
+{
+    "id": 26,
+    "name": "Замена водительского удостоверения",
+    "description": "Замена водительского удостоверения при истечении срока",
+    "category": {
+        "id": 1,
+        "name": "Документы и удостоверения",
+        "description": "Категория документов"
+    },
+    "category_id": 1,
+    "category_name": "Документы и удостоверения",
+    "duration_days": 14
+}
+
+1.4. Обновить услугу
+
+Метод: PUT или PATCH
+URL: /api/services/{id}/
+Описание: Обновляет информацию об услуге. PUT требует все поля, PATCH - только изменяемые
+
+Пример запроса (PATCH):
+curl -X PATCH http://127.0.0.1:8000/api/services/1/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "duration_days": 20
+  }'
+
+Пример ответа (200 OK):
+{
+    "id": 1,
+    "name": "Выдача паспорта РФ",
+    "description": "Оформление паспорта гражданина Российской Федерации",
+    "category": {
+        "id": 1,
+        "name": "Документы и удостоверения",
+        "description": "Категория документов"
+    },
+    "category_id": 1,
+    "category_name": "Документы и удостоверения",
+    "duration_days": 20
+}
+
+1.5. Удалить услугу
+
+Метод: DELETE
+URL: /api/services/{id}/
+Описание: Удаляет услугу по её ID
+
+Пример запроса:
+curl -X DELETE http://127.0.0.1:8000/api/services/1/
+
+Пример ответа (204 No Content): пустое тело ответа
+
+1.6. Фильтрация услуг
+
+Метод: GET
+URL: /api/services/?{параметры}
+Описание: Фильтрация списка услуг по различным параметрам
+
+Параметры фильтрации:
+- name - поиск по названию (частичное совпадение)
+- category - фильтр по ID категории
+- category_name - поиск по названию категории (частичное совпадение)
+- duration_min - минимальный срок выполнения (дней)
+- duration_max - максимальный срок выполнения (дней)
+- search - общий поиск по полям name, description, category__name
+- ordering - сортировка (name, duration_days, category__name, -name, -duration_days)
+- short_duration=true - услуги со сроком до 7 дней
+- popular=true - услуги, на которые есть хотя бы одна заявка
+- complex_filter=true - сложный фильтр: услуги больше 7 дней И без описания
+
+Примеры запросов:
+
+Фильтр по названию:
+curl -X GET "http://127.0.0.1:8000/api/services/?name=паспорт"
+
+Фильтр по категории:
+curl -X GET "http://127.0.0.1:8000/api/services/?category=1"
+
+Фильтр по сроку выполнения:
+curl -X GET "http://127.0.0.1:8000/api/services/?duration_min=1&duration_max=7"
+
+Поиск:
+curl -X GET "http://127.0.0.1:8000/api/services/?search=паспорт"
+
+Сортировка:
+curl -X GET "http://127.0.0.1:8000/api/services/?ordering=-duration_days"
+
+Услуги с коротким сроком:
+curl -X GET "http://127.0.0.1:8000/api/services/?short_duration=true"
+
+Популярные услуги:
+curl -X GET "http://127.0.0.1:8000/api/services/?popular=true"
+
+Сложный фильтр:
+curl -X GET "http://127.0.0.1:8000/api/services/?complex_filter=true"
+
+1.7. Статистика по услугам (кастомное действие)
+
+Метод: GET
+URL: /api/services/statistics/
+Описание: Возвращает агрегированную статистику по услугам
+
+Пример запроса:
+curl -X GET http://127.0.0.1:8000/api/services/statistics/
+
+Пример ответа:
+{
+    "total_services": 25,
+    "services_by_category": [
+        {
+            "category__name": "Документы и удостоверения",
+            "count": 8
+        },
+        {
+            "category__name": "Регистрация",
+            "count": 5
+        }
+    ],
+    "average_duration_days": 18.5
+}
+
+1.8. Дублировать услугу (кастомное действие)
+
+Метод: POST
+URL: /api/services/{id}/duplicate/
+Описание: Создаёт копию услуги с добавлением "(копия)" к названию
+
+Пример запроса:
+curl -X POST http://127.0.0.1:8000/api/services/1/duplicate/
+
+Пример ответа (201 Created):
+{
+    "id": 27,
+    "name": "Выдача паспорта РФ (копия)",
+    "description": "Оформление паспорта гражданина Российской Федерации",
+    "category": {
+        "id": 1,
+        "name": "Документы и удостоверения",
+        "description": "Категория документов"
+    },
+    "category_id": 1,
+    "category_name": "Документы и удостоверения",
+    "duration_days": 30
+}
+
+2. API для заявок (Request)
+
+2.1. Получить список всех заявок
+
+Метод: GET
+URL: /api/requests/
+Описание: Возвращает список всех заявок с пагинацией. Обычные пользователи видят только свои заявки
+
+Пример запроса:
+curl -X GET http://127.0.0.1:8000/api/requests/
+
+Пример ответа:
+{
+    "count": 15,
+    "next": "http://127.0.0.1:8000/api/requests/?page=2",
+    "previous": null,
+    "results": [
+        {
+            "id": 1,
+            "user": {
+                "id": 1,
+                "full_name": "Иванов Иван Иванович",
+                "email": "ivanov@example.com",
+                "phone": "+7 900 1234567",
+                "created_at": "2024-01-15T10:00:00Z"
+            },
+            "user_id": 1,
+            "service": {
+                "id": 1,
+                "name": "Выдача паспорта РФ",
+                "description": "Оформление паспорта",
+                "category": {
+                    "id": 1,
+                    "name": "Документы и удостоверения",
+                    "description": "Категория документов"
+                },
+                "category_id": 1,
+                "category_name": "Документы и удостоверения",
+                "duration_days": 30
+            },
+            "service_id": 1,
+            "office": {
+                "id": 1,
+                "address": "ул. Ленина, д. 10",
+                "district": "Центральный",
+                "working_hours": "Пн-Пт: 9:00-18:00"
+            },
+            "office_id": 1,
+            "status": "new",
+            "status_display": "Новая",
+            "created_at": "2024-01-20T12:00:00Z",
+            "updated_at": "2024-01-20T12:00:00Z"
+        }
+    ]
+}
+
+2.2. Получить конкретную заявку
+
+Метод: GET
+URL: /api/requests/{id}/
+Описание: Возвращает информацию об одной заявке по её ID
+
+Пример запроса:
+curl -X GET http://127.0.0.1:8000/api/requests/1/
+
+Пример ответа: аналогичен элементу из списка заявок
+
+2.3. Создать новую заявку
+
+Метод: POST
+URL: /api/requests/
+Описание: Создаёт новую заявку. Требуется указать user_id и service_id
+
+Пример запроса:
+curl -X POST http://127.0.0.1:8000/api/requests/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": 1,
+    "service_id": 1,
+    "office_id": 1,
+    "status": "new"
+  }'
+
+Пример ответа (201 Created):
+{
+    "id": 16,
+    "user": {
+        "id": 1,
+        "full_name": "Иванов Иван Иванович",
+        "email": "ivanov@example.com",
+        "phone": "+7 900 1234567",
+        "created_at": "2024-01-15T10:00:00Z"
+    },
+    "user_id": 1,
+    "service": {
+        "id": 1,
+        "name": "Выдача паспорта РФ",
+        "description": "Оформление паспорта",
+        "category": {
+            "id": 1,
+            "name": "Документы и удостоверения",
+            "description": "Категория документов"
+        },
+        "category_id": 1,
+        "category_name": "Документы и удостоверения",
+        "duration_days": 30
+    },
+    "service_id": 1,
+    "office": {
+        "id": 1,
+        "address": "ул. Ленина, д. 10",
+        "district": "Центральный",
+        "working_hours": "Пн-Пт: 9:00-18:00"
+    },
+    "office_id": 1,
+    "status": "new",
+    "status_display": "Новая",
+    "created_at": "2024-01-20T14:00:00Z",
+    "updated_at": "2024-01-20T14:00:00Z"
+}
+
+2.4. Обновить заявку
+
+Метод: PUT или PATCH
+URL: /api/requests/{id}/
+Описание: Обновляет информацию о заявке
+
+Пример запроса (PATCH):
+curl -X PATCH http://127.0.0.1:8000/api/requests/1/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "in_progress"
+  }'
+
+Пример ответа (200 OK): аналогичен ответу при создании заявки
+
+2.5. Удалить заявку
+
+Метод: DELETE
+URL: /api/requests/{id}/
+Описание: Удаляет заявку по её ID
+
+Пример запроса:
+curl -X DELETE http://127.0.0.1:8000/api/requests/1/
+
+Пример ответа (204 No Content): пустое тело ответа
+
+2.6. Фильтрация заявок
+
+Метод: GET
+URL: /api/requests/?{параметры}
+Описание: Фильтрация списка заявок по различным параметрам
+
+Параметры фильтрации:
+- status - фильтр по статусу (new, in_progress, completed, rejected)
+- user - фильтр по ID пользователя
+- service - фильтр по ID услуги
+- service_name - поиск по названию услуги (частичное совпадение)
+- office - фильтр по ID отделения
+- office_address - поиск по адресу отделения (частичное совпадение)
+- created_after - заявки, созданные после указанной даты (формат: YYYY-MM-DD или YYYY-MM-DDTHH:MM:SS)
+- created_before - заявки, созданные до указанной даты
+- search - общий поиск по полям service__name, user__full_name, status
+- ordering - сортировка (created_at, updated_at, status, -created_at, -updated_at)
+- active_status=true - заявки со статусом "новая" или "в обработке"
+- date_from - фильтр по дате создания (от)
+- date_to - фильтр по дате создания (до)
+- complex_filter=true - сложный фильтр: заявки других пользователей со статусом "в обработке" или "новая"
+
+Примеры запросов:
+
+Фильтр по статусу:
+curl -X GET "http://127.0.0.1:8000/api/requests/?status=new"
+
+Фильтр по пользователю:
+curl -X GET "http://127.0.0.1:8000/api/requests/?user=1"
+
+Фильтр по услуге:
+curl -X GET "http://127.0.0.1:8000/api/requests/?service=1"
+
+Фильтр по дате создания:
+curl -X GET "http://127.0.0.1:8000/api/requests/?created_after=2024-01-01&created_before=2024-01-31"
+
+Активные заявки:
+curl -X GET "http://127.0.0.1:8000/api/requests/?active_status=true"
+
+Сортировка по дате создания (новые сначала):
+curl -X GET "http://127.0.0.1:8000/api/requests/?ordering=-created_at"
+
+2.7. Получить мои заявки (кастомное действие)
+
+Метод: GET
+URL: /api/requests/my_requests/
+Описание: Возвращает заявки текущего аутентифицированного пользователя. Требуется аутентификация
+
+Пример запроса:
+curl -X GET http://127.0.0.1:8000/api/requests/my_requests/ \
+  -H "Cookie: sessionid=..."
+
+Пример ответа:
+[
+    {
+        "id": 1,
+        "user": {
+            "id": 1,
+            "full_name": "Иванов Иван Иванович",
+            "email": "ivanov@example.com",
+            "phone": "+7 900 1234567",
+            "created_at": "2024-01-15T10:00:00Z"
+        },
+        "user_id": 1,
+        "service": {
+            "id": 1,
+            "name": "Выдача паспорта РФ",
+            "description": "Оформление паспорта",
+            "category": {
+                "id": 1,
+                "name": "Документы и удостоверения",
+                "description": "Категория документов"
+            },
+            "category_id": 1,
+            "category_name": "Документы и удостоверения",
+            "duration_days": 30
+        },
+        "service_id": 1,
+        "office": null,
+        "office_id": null,
+        "status": "new",
+        "status_display": "Новая",
+        "created_at": "2024-01-20T12:00:00Z",
+        "updated_at": "2024-01-20T12:00:00Z"
+    }
+]
+
+2.8. Изменить статус заявки (кастомное действие)
+
+Метод: POST
+URL: /api/requests/{id}/change_status/
+Описание: Изменяет статус конкретной заявки. Требуется указать новый статус в теле запроса
+
+Пример запроса:
+curl -X POST http://127.0.0.1:8000/api/requests/1/change_status/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "in_progress"
+  }'
+
+Пример ответа (200 OK):
+{
+    "id": 1,
+    "user": {
+        "id": 1,
+        "full_name": "Иванов Иван Иванович",
+        "email": "ivanov@example.com",
+        "phone": "+7 900 1234567",
+        "created_at": "2024-01-15T10:00:00Z"
+    },
+    "user_id": 1,
+    "service": {
+        "id": 1,
+        "name": "Выдача паспорта РФ",
+        "description": "Оформление паспорта",
+        "category": {
+            "id": 1,
+            "name": "Документы и удостоверения",
+            "description": "Категория документов"
+        },
+        "category_id": 1,
+        "category_name": "Документы и удостоверения",
+        "duration_days": 30
+    },
+    "service_id": 1,
+    "office": null,
+    "office_id": null,
+    "status": "in_progress",
+    "status_display": "В обработке",
+    "created_at": "2024-01-20T12:00:00Z",
+    "updated_at": "2024-01-20T14:30:00Z"
+}
+
+Допустимые значения статуса: new, in_progress, completed, rejected
+
+3. Пагинация
+
+Все списковые эндпоинты поддерживают пагинацию. По умолчанию возвращается 10 записей на страницу.
+
+Параметры пагинации:
+- page - номер страницы (начиная с 1)
+
+Пример запроса:
+curl -X GET "http://127.0.0.1:8000/api/services/?page=2"
+
+Ответ содержит поля:
+- count - общее количество записей
+- next - URL следующей страницы (null, если страницы нет)
+- previous - URL предыдущей страницы (null, если страницы нет)
+- results - массив записей текущей страницы
+
+4. Коды ответов HTTP
+
+- 200 OK - успешный запрос (GET, PUT, PATCH)
+- 201 Created - успешное создание (POST)
+- 204 No Content - успешное удаление (DELETE)
+- 400 Bad Request - ошибка валидации данных
+- 401 Unauthorized - требуется аутентификация
+- 404 Not Found - ресурс не найден
+- 500 Internal Server Error - внутренняя ошибка сервера
+
+5. Валидация данных
+
+При создании или обновлении данных выполняется валидация:
+
+Для услуг (Service):
+- name - обязательное поле, минимум 3 символа
+- category_id - обязательное поле, должен существовать в базе
+- duration_days - не может превышать 365 дней, минимум 1 день
+
+Для заявок (Request):
+- user_id - обязательное поле, должен существовать в базе
+- service_id - обязательное поле, должен существовать в базе
+- office_id - необязательное поле, может быть null
+- status - должен быть одним из: new, in_progress, completed, rejected
+
+При ошибке валидации возвращается код 400 Bad Request с описанием ошибок в формате JSON.
+
+Пример ответа с ошибкой валидации:
+{
+    "name": [
+        "Название услуги должно содержать минимум 3 символа"
+    ],
+    "duration_days": [
+        "Срок выполнения не может превышать 365 дней"
+    ]
+}
+
+6. Примеры использования в Postman
+
+Для тестирования API в Postman:
+
+1. Создайте новую коллекцию "МФЦ API"
+2. Добавьте переменную окружения base_url = http://127.0.0.1:8000/api
+3. Для аутентифицированных запросов используйте вкладку "Authorization" -> "Session Auth" или добавьте Cookie с sessionid
+
+Примеры запросов:
+- GET {{base_url}}/services/
+- GET {{base_url}}/services/1/
+- POST {{base_url}}/services/ (с телом запроса в формате JSON)
+- GET {{base_url}}/services/statistics/
+- GET {{base_url}}/requests/
+- POST {{base_url}}/requests/1/change_status/ (с телом {"status": "in_progress"})
+
+7. Тестирование management-команды
+
+Для генерации тестовых данных выполните команду:
+
+python manage.py generate_test_data
+
+С параметрами:
+python manage.py generate_test_data --categories 10 --services 20 --users 15
+
+Команда создаст:
+- Указанное количество категорий услуг
+- Указанное количество услуг
+- Указанное количество пользователей
+- До 10 заявок (связывая пользователей с услугами)
+
+После выполнения команды вы увидите сообщения о созданных объектах и итоговую статистику.
+
